@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "9f091a0c-77aa-4a57-8297-f19060ea2c41",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "E:\\career_plan\\diagrams\\backend-stack\\candidate.json",
+  "output": "E:\\career_plan\\diagrams\\backend-stack\\backend-stack.html",
+  "specification": {
+    "sha256": "c7697a2a6e61c3515f6451bb4f6ea8319348f3dfd00197e92f36c0a9815d6818",
+    "bytes": 3846
+  },
+  "artifact": {
+    "sha256": "90f0d13e0ad450496b7cf5a5321b94b71f719d2eea5bc0028259533db9553866",
+    "bytes": 764343
+  }
+}

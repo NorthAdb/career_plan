@@ -1,0 +1,3 @@
+*.finalize.json
+*.finalize-summary.json
+*.browser-check.json

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "c76ec89c-9276-4482-9cfe-3ebae83128f2",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "E:\\career_plan\\diagrams\\agent-eval\\candidate.json",
+  "output": "E:\\career_plan\\diagrams\\agent-eval\\agent-eval.html",
+  "specification": {
+    "sha256": "f6563fafa6716c07b48d7e0ae5adcd8bb462cb7520f98046e120607f05eaa9a3",
+    "bytes": 4974
+  },
+  "artifact": {
+    "sha256": "95f14b91f7cf7f9c9dbdc1f8356212304d4ec1c98c8a407f70cc9d85d4c00256",
+    "bytes": 774223
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "dbc4869f-5708-42ba-85de-8167159cc268",
+  "status": "current",
+  "command": "deliver",
+  "type": "sequence",
+  "input": "E:\\career_plan\\diagrams\\return-flow\\candidate.json",
+  "output": "E:\\career_plan\\diagrams\\return-flow\\return-flow.html",
+  "specification": {
+    "sha256": "6092026d1e58209e2a11410bbcc2c7891666ad7bc53b30472cbb17dbfeab6684",
+    "bytes": 4238
+  },
+  "artifact": {
+    "sha256": "da6c4a30dac06aed902e0d418f9664346730431e98df4cd757e80684052278a9",
+    "bytes": 761934
+  }
+}

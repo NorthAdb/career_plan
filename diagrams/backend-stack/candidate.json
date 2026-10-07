@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "电商后端 + 售后 Agent：业务库 MySQL，AI 数据层 PostgreSQL",
+    "locale": "zh-CN",
+    "output": "diagrams/backend-stack/backend-stack.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "users", "type": "external", "label": "买家 / 客服", "sublabel": "浏览器 / App", "pos": [40, 260], "size": [150, 64] },
+    { "id": "nginx", "type": "cloud", "label": "Nginx", "sublabel": "反向代理 · 负载均衡", "pos": [300, 260], "size": [150, 64] },
+    { "id": "portal", "type": "backend", "label": "mall 业务服务", "sublabel": "Spring Boot · MyBatis", "pos": [560, 260], "size": [150, 64], "tag": "订单 / 售后 API" },
+    { "id": "mysql", "type": "database", "label": "MySQL 业务库", "sublabel": "订单 · 商品 · 退货", "pos": [820, 260], "size": [150, 64] },
+    { "id": "redis", "type": "database", "label": "Redis", "sublabel": "缓存 · 锁 · 限流", "pos": [560, 80], "size": [150, 64] },
+    { "id": "mq", "type": "messagebus", "label": "RabbitMQ", "sublabel": "超时取消 · 退款异步", "pos": [820, 80], "size": [150, 64] },
+    { "id": "agent", "type": "backend", "label": "售后 Agent（新增）", "sublabel": "Spring AI · 意图路由", "pos": [560, 440], "size": [150, 64], "tag": "改造重点" },
+    { "id": "pg", "type": "database", "label": "PostgreSQL AI 库", "sublabel": "pgvector · 记忆 · 审计", "pos": [820, 440], "size": [150, 64], "tag": "新增" },
+    { "id": "llm", "type": "external", "label": "LLM / Embedding", "sublabel": "大小模型路由", "pos": [560, 620], "size": [150, 64] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Docker Compose 单机部署", "wraps": ["nginx", "portal", "mysql", "redis", "mq", "agent", "pg"] }
+  ],
+  "connections": [
+    { "id": "users-nginx", "from": "users", "to": "nginx", "label": "HTTPS", "variant": "emphasis" },
+    { "id": "nginx-portal", "from": "nginx", "to": "portal", "label": "/api 反代", "variant": "emphasis" },
+    { "id": "portal-mysql", "from": "portal", "to": "mysql", "label": "SQL 事务", "variant": "emphasis" },
+    { "id": "portal-redis", "from": "portal", "to": "redis", "label": "缓存 · 锁 · 幂等键" },
+    { "id": "portal-mq", "from": "portal", "to": "mq", "label": "异步消息", "variant": "dashed" },
+    { "id": "nginx-agent", "from": "nginx", "to": "agent", "label": "/ai SSE 流式" },
+    { "id": "agent-portal", "from": "agent", "to": "portal", "label": "工具调用 · 写操作需人工审批", "variant": "security" },
+    { "id": "agent-pg", "from": "agent", "to": "pg", "label": "混合检索" },
+    { "id": "mysql-pg", "from": "mysql", "to": "pg", "label": "商品增量同步", "variant": "dashed" },
+    { "id": "agent-llm", "from": "agent", "to": "llm", "label": "PII 脱敏后调用", "variant": "security" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "两个库各管什么", "items": ["MySQL：mall 原有交易数据，事务优先，不动", "PostgreSQL：售后政策和商品的向量 + 全文索引、会话记忆、工具审计、语义缓存、评测结果", "AI 负载不压交易库，各自独立扩容"] },
+    { "dot": "cyan", "title": "Agent 内部", "items": ["意图路由：小模型分类，大模型只处理复杂推理", "工具层：身份注入、读写分级、幂等、审计", "护栏：输入防注入、手机号地址脱敏、输出校验", "观测：Spring AI 埋点 → OpenTelemetry → Langfuse"] },
+    { "dot": "amber", "title": "知道就行：面试能讲清是什么", "items": ["微服务 Spring Cloud Alibaba：Nacos、Gateway、Sentinel", "分布式事务 Seata、分库分表 ShardingSphere", "K8s：容器编排，实习生不要求会运维"] }
+  ]
+}

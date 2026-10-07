@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "故障排查 Agent：运行链路（上）与评测闭环（下）",
+    "locale": "zh-CN",
+    "output": "diagrams/agent-eval/agent-eval.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "browser", "type": "frontend", "label": "浏览器控制台", "sublabel": "事件时间线 · 审批", "pos": [40, 260], "size": [150, 64] },
+    { "id": "server", "type": "backend", "label": "Agent Server", "sublabel": "FastAPI · 复用 v7/r3", "pos": [300, 260], "size": [150, 64] },
+    { "id": "harness", "type": "backend", "label": "Harness 内核", "sublabel": "loop · 压缩 · skills", "pos": [560, 260], "size": [150, 64], "tag": "自研" },
+    { "id": "tools", "type": "backend", "label": "工具层 / MCP", "sublabel": "日志 · 指标 · 探测", "pos": [820, 260], "size": [150, 64] },
+    { "id": "range", "type": "cloud", "label": "故障靶场", "sublabel": "Nginx → Worker → Redis", "pos": [1080, 260], "size": [150, 64] },
+    { "id": "redis", "type": "database", "label": "Redis", "sublabel": "Stream 续传 · Pub/Sub", "pos": [300, 80], "size": [150, 64] },
+    { "id": "llm", "type": "external", "label": "LLM API", "sublabel": "大小模型路由", "pos": [560, 80], "size": [150, 64] },
+    { "id": "memory", "type": "database", "label": "历史故障案例", "sublabel": "PostgreSQL · pgvector", "pos": [820, 80], "size": [150, 64], "tag": "长期记忆" },
+    { "id": "tasks", "type": "database", "label": "任务集 YAML", "sublabel": "故障 + 真值根因", "pos": [300, 440], "size": [150, 64] },
+    { "id": "runner", "type": "backend", "label": "评测 Runner", "sublabel": "每任务跑 k 次", "pos": [560, 440], "size": [150, 64] },
+    { "id": "injector", "type": "security", "label": "故障注入器", "sublabel": "脚本 + toxiproxy", "pos": [1080, 440], "size": [150, 64] },
+    { "id": "traces", "type": "database", "label": "PostgreSQL 评测库", "sublabel": "transcript · 成绩", "pos": [560, 620], "size": [150, 64] },
+    { "id": "grader", "type": "security", "label": "Grader 判分", "sublabel": "规则 + LLM judge", "pos": [820, 620], "size": [150, 64] },
+    { "id": "report", "type": "frontend", "label": "评测报告", "sublabel": "SQL 统计 · 消融对比", "pos": [1080, 620], "size": [150, 64] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "运行链路", "wraps": ["browser", "server", "harness", "tools", "range", "redis", "llm", "memory"] },
+    { "kind": "region", "label": "评测闭环", "wraps": ["tasks", "runner", "injector", "traces", "grader", "report"] }
+  ],
+  "connections": [
+    { "id": "browser-server", "from": "browser", "to": "server", "label": "SSE + WS", "variant": "emphasis" },
+    { "id": "server-harness", "from": "server", "to": "harness", "label": "事件流", "variant": "emphasis" },
+    { "id": "harness-tools", "from": "harness", "to": "tools", "label": "tool call", "variant": "emphasis" },
+    { "id": "tools-range", "from": "tools", "to": "range", "label": "只读探测", "variant": "emphasis" },
+    { "id": "server-redis", "from": "server", "to": "redis", "label": "事件日志" },
+    { "id": "harness-llm", "from": "harness", "to": "llm", "label": "Chat API" },
+    { "id": "tools-memory", "from": "tools", "to": "memory", "label": "相似案例检索" },
+    { "id": "tasks-runner", "from": "tasks", "to": "runner", "label": "读任务" },
+    { "id": "runner-harness", "from": "runner", "to": "harness", "label": "直接驱动内核" },
+    { "id": "runner-injector", "from": "runner", "to": "injector", "label": "注入第 n 个故障", "variant": "dashed" },
+    { "id": "injector-range", "from": "injector", "to": "range", "label": "制造故障", "variant": "security" },
+    { "id": "runner-traces", "from": "runner", "to": "traces", "label": "写入 transcript" },
+    { "id": "traces-grader", "from": "traces", "to": "grader", "label": "逐条判分" },
+    { "id": "grader-report", "from": "grader", "to": "report", "label": "汇总" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "运行链路：复用已有资产", "items": ["Agent Server 直接复用 web_foundation 的 v7/r3", "Harness 内核来自 minimal_harness 练习", "危险操作经 hook 拦截，走 WS 人工审批", "工具在靶场容器内白名单执行，同时暴露为 MCP server"] },
+    { "dot": "violet", "title": "PostgreSQL 一库三用", "items": ["历史故障案例：症状、根因、证据的向量 + 全文混合检索", "评测库：每次运行、每个 trial、每步工具调用都可用 SQL 分析", "OpenTelemetry trace 导出到 Phoenix 查看"] },
+    { "dot": "amber", "title": "消融实验：出简历数字", "items": ["有无 runbook skill、有无案例记忆", "有无上下文压缩、大小模型路由", "不同模型的准确率 / 成本 / 耗时", "改 prompt 前后回归"] }
+  ]
+}

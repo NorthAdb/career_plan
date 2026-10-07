@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "项目 A 核心链路：退货申请两阶段提交 + 幂等",
+    "locale": "zh-CN",
+    "output": "diagrams/return-flow/return-flow.html",
+    "viewBox": [1080, 690],
+    "column_fit": "spread",
+    "quality_profile": "showcase"
+  },
+  "participants": [
+    { "id": "buyer", "type": "external", "label": "买家", "sublabel": "聊天页" },
+    { "id": "agent", "type": "backend", "label": "售后 Agent", "sublabel": "Spring AI" },
+    { "id": "llm", "type": "external", "label": "LLM", "sublabel": "大模型" },
+    { "id": "tools", "type": "security", "label": "工具层", "sublabel": "身份注入 · 审计" },
+    { "id": "redis", "type": "database", "label": "Redis", "sublabel": "幂等键" },
+    { "id": "mysql", "type": "database", "label": "MySQL", "sublabel": "订单 · 退货申请" },
+    { "id": "admin", "type": "frontend", "label": "客服后台", "sublabel": "mall-admin" },
+    { "id": "mq", "type": "messagebus", "label": "RabbitMQ", "sublabel": "退款异步" }
+  ],
+  "messages": [
+    { "id": "ask", "from": "buyer", "to": "agent", "y": 165, "label": "① 我要退这双鞋", "variant": "emphasis" },
+    { "id": "plan", "from": "agent", "to": "llm", "y": 194, "label": "对话 + 可用工具", "variant": "default" },
+    { "id": "toolcall", "from": "llm", "to": "agent", "y": 223, "label": "tool_call 创建草稿", "variant": "return" },
+    { "id": "invoke", "from": "agent", "to": "tools", "y": 252, "label": "调用，userId 由服务端注入", "variant": "security" },
+    { "id": "check", "from": "tools", "to": "mysql", "y": 281, "label": "校验订单归属与政策", "variant": "default" },
+    { "id": "draft", "from": "tools", "to": "agent", "y": 310, "label": "草稿 draftId（未提交）", "variant": "return" },
+    { "id": "card", "from": "agent", "to": "buyer", "y": 339, "label": "展示草稿卡片", "variant": "return" },
+    { "id": "confirm", "from": "buyer", "to": "tools", "y": 368, "label": "② 确认 draftId，不经过 LLM", "variant": "emphasis" },
+    { "id": "setnx", "from": "tools", "to": "redis", "y": 397, "label": "SET NX EX", "variant": "security" },
+    { "id": "setnx-ok", "from": "redis", "to": "tools", "y": 426, "label": "成功；重复请求失败", "variant": "return" },
+    { "id": "insert", "from": "tools", "to": "mysql", "y": 455, "label": "插入申请，唯一索引兜底", "variant": "emphasis" },
+    { "id": "done", "from": "tools", "to": "buyer", "y": 484, "label": "已提交", "variant": "return" },
+    { "id": "approve", "from": "admin", "to": "mysql", "y": 513, "label": "③ 审核：待处理 → 已同意", "variant": "emphasis" },
+    { "id": "refund", "from": "admin", "to": "mq", "y": 542, "label": "退款消息", "variant": "dashed" }
+  ],
+  "activations": [
+    { "participant": "agent", "from": 160, "to": 345, "type": "backend" },
+    { "participant": "llm", "from": 189, "to": 228, "type": "external" },
+    { "participant": "tools", "from": 247, "to": 315, "type": "security" },
+    { "participant": "mysql", "from": 276, "to": 290, "type": "database" },
+    { "participant": "tools", "from": 363, "to": 489, "type": "security" },
+    { "participant": "redis", "from": 392, "to": 431, "type": "database" },
+    { "participant": "mysql", "from": 450, "to": 465, "type": "database" },
+    { "participant": "admin", "from": 508, "to": 548, "type": "frontend" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "两阶段：LLM 只能生成草稿", "items": ["写操作第一阶段只产生草稿，数据库里没有正式申请", "确认由用户点击，走普通接口，不经过 LLM", "userId 永远来自登录态，不来自模型参数"] },
+    { "dot": "rose", "title": "幂等两层", "items": ["Redis SET NX EX 挡住并发和重复点击", "MySQL 唯一索引兜底：Redis 失效时仍不会重复插入", "LLM 重试、网络重放都落在这两层"] },
+    { "dot": "orange", "title": "异步退款", "items": ["状态变更由客服点击触发", "退款消息经本地消息表投递，消费端按申请 ID 去重", "每次工具调用写入 PostgreSQL 审计表"] }
+  ]
+}
